@@ -1,0 +1,145 @@
+---
+title: "Assignment 2"
+author: "Elliot Gavrin"
+date: "2023-01-16"
+output: html_document
+---
+[https://github.com/19eag3/BIOL432_Assignment2](https://github.com/19eag3/BIOL432_Assignment2)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Part I: Data Exploration
+1. 
+```{r}
+MyData <-read.csv("C:/Users/egavr/OneDrive/Documents/BIOL432/Csv files/BirdBehaviour.csv")
+library(dplyr)
+library(ggplot2)
+library(ggfortify)
+
+```
+
+2. 
+```{r}
+dim(MyData)
+head(MyData)
+tail(MyData)
+str(MyData)
+summary(MyData)
+```
+
+3.  NEED FIGURE CAPTIONS
+```{r}
+ggplot(aes(x=Groom,fill=(Species)), data=MyData)+
+  geom_bar(bins=10)+
+  labs(x = "Grooming (min)", y="", fill="Species")+
+  facet_wrap(vars(Species), scales='free')+
+  theme_classic()
+ggplot(aes(x=Forage,fill=(Species)), data=MyData)+
+  geom_bar(bins=10)+
+  labs(x = "Foraging (min)", y="", fill="Species")+
+  facet_wrap(vars(Species), scales='free')+
+  theme_classic()
+ggplot(aes(x=Mate,fill=(Species)), data=MyData)+
+  geom_bar(bins=10)+
+  labs(x = "Mating (min)", y="", fill="Species")+
+  facet_wrap(vars(Species), scales='free')+
+  theme_classic()
+ggplot(aes(x=Sleep,fill=(Species)), data=MyData)+
+  geom_bar(bins=10)+
+  labs(x = "Sleeping (min)", y="", fill="Species")+
+  facet_wrap(vars(Species), scales='free')+
+  theme_classic()
+
+avgData <- MyData %>% group_by(Species) %>% 
+  summarise(mean_groom=mean(Groom),
+            mean_forage= mean(Forage),
+            mean_mate=mean(Mate),
+            mean_sleep=mean(Sleep))%>%
+  as.data.frame()
+avgData
+```
+Figures 1-4: Display the distribution of minutes of each behavior between all 6 of the different observed species. The figures in order are the times grooming, foraging, mating, and sleeping respectively.
+4.
+```{r}
+corData <-MyData %>%
+  select(3:6)
+corData <-round(cor(corData),3)
+```
+
+5.
+The correlation efficient matrix shows the correlation between grooming and mating is 0.481, which indicates that these are somewhat positively correlated. Mating and sleeping are somewhat negatively correlated. The pairs, grooming and foraging, grooming and sleeping, and mating and foraging are weakly negatively correlated. Sleeping and foraging have very little association. The figures above show a large range in each behavior and between species
+
+Part II: PCA
+1. 
+```{r}
+scaleData <-scale(corData, center = FALSE, scale = TRUE)
+```
+Data should be scaled to avoid quantitatively large variables from dominating the analysis. To scale the data by dividing by the standard deviation, the parameter scale needs to equal true. Using this default scaling puts all the variables on the same scale and makes their standard deviations equal to 1. 
+
+2. 
+```{r}
+DataPCA <-princomp(scaleData)
+```
+I only used columns 3 to 6 because those are the four columns that contain values for the different behaviors (grooming, mating, foraging, and sleeping)
+
+3.
+```{r}
+DataPCA <-princomp(corData, cor=F)
+```
+Using cor=F indicates that to the function to use the covariation matrix. This does not scale the data. We do not want to scale the data, because we already scaled the variables to the same scale. If the variables are on a different scale, cor should be true to use the correlation matrix.
+
+4. 
+```{r}
+str(DataPCA)
+head(DataPCA$scores)
+DataPCA$loadings
+DataPCA$sdev
+```
+The object that was created displays information on the correlation between different variables. These are emphasised in the scores, loadings, and principle components. Negative values indicate a negative correlation, and positive will indicate a positive correlation. 
+
+5. 
+```{r}
+PCLoad<-data.frame(Eigenvector=c(1:4),
+                   Eigenvalue=DataPCA$sdev^2)
+ggplot(aes(x=Eigenvector,y=Eigenvalue),data=PCLoad)+
+  geom_point() + geom_line()
+```
+
+Figure 5: Screeplot representing the variation relative to each eigenvector's principle component. 
+
+Loadings are the correlations between the original predictor variables and the principal components. Scores are the calcaulted princple components. They contain the principle component vectors.
+
+Interpretation
+
+1.
+```{r}
+MyData<-cbind(MyData,DataPCA$scores)
+
+```
+2. Create bivariate plots for PC1 vs PC2 and another plot for PC3 vs PC4. From these four principal components, choose the two ‘best’ PCs for a bivariate plot and add it to your R markdown file. The criteria for ‘best’ depends on the question. In this case, let’s focus on the question How do species differ in their behavior? Choose the two axes that are ‘best’ in their ability to identify differences among species.
+```{r}
+pData<-cbind(corData,DataPCA$scores)
+ggplot(aes(x=Comp.1,y=Comp.2),data=pData) +
+  geom_point()+
+  geom_jitter()
+```
+Figure 6: Bivariate plots for PC1 vs PC2 that displays the eigenvectors and their loadings. 
+
+The PC1 vs PC2 plot is the 'best' plot to determine how species differ in their behavior. 
+
+3.
+```{r}
+eigen(corData)
+DataPCA$loadings
+autoplot(DataPCA,data=MyData,
+        loadings=T,loadings.labels=T)
+```
+
+4.
+Eigenvector loadings indicate the strength and polarity of the correlation. A large number indicates a strong relationship to the principle component. The polarity determines whether the relationship is positive or negativly coorelated. The loadings tell us that Mating and grooming are positively coorelated and foraging and sleeping have little to no correlation.
+
+
+
+
